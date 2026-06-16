@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "MLM Uygulaması"
+version = "1.0.0"
+id = "artifacts/mlm-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24163
+
+[services.development]
+run = "cd /home/runner/workspace/mlm-app && /home/runner/workspace/node_modules/.pnpm/node_modules/.bin/tsx server.ts"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mlm-app", "run", "build" ]
+publicDir = "artifacts/mlm-app/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24163"
+BASE_PATH = "/"
