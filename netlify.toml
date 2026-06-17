@@ -4,3 +4,4 @@ publish = "mlm-app/dist/spa"
 
 [build.environment]
 PNPM_VERSION = "10.30.3"
+VITE_API_URL = ""
