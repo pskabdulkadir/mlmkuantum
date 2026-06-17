@@ -483,6 +483,8 @@ export default function MemberPanel() {
 
   // Automated redirect if active duration expired (süre dolunca üye direk alış verişe yönlendirilsin)
   useEffect(() => {
+    // TODO: Test aşamasında devre dışı - production'da aktifleştir
+    /*
     if (user && user.isActive && user.role !== "admin") {
       const remainingDays = calculateRemainingDays(user.activeUntil);
       if (remainingDays <= 0) {
@@ -490,6 +492,7 @@ export default function MemberPanel() {
         navigate("/products");
       }
     }
+    */
   }, [user, navigate]);
 
 
