@@ -102,6 +102,8 @@ import { UserGuideModal } from "@/components/UserGuideModal";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { MonolineCommissionHistory } from "@/components/MonolineCommissionHistory";
+
 interface User {
   id: string;
   memberId: string;
@@ -1688,6 +1690,7 @@ export default function MemberPanel() {
               <TabsTrigger value="new-register" className="px-4 py-2 whitespace-nowrap">➕ Yeni Üye Kaydı</TabsTrigger>
               <TabsTrigger value="clone-products" className="px-4 py-2 whitespace-nowrap">Ürün Mağazam</TabsTrigger>
               <TabsTrigger value="earnings" className="px-4 py-2 whitespace-nowrap">Kazançlar</TabsTrigger>
+              <TabsTrigger value="commissions" className="px-4 py-2 whitespace-nowrap">📊 Komisyon Geçmişi</TabsTrigger>
               <TabsTrigger value="transactions" className="px-4 py-2 whitespace-nowrap">İşlemler</TabsTrigger>
               <TabsTrigger value="documents" className="px-4 py-2 whitespace-nowrap">Dökümanlar</TabsTrigger>
               <TabsTrigger value="profile" className="px-4 py-2 whitespace-nowrap">Profil</TabsTrigger>
@@ -3139,6 +3142,11 @@ export default function MemberPanel() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Commission History Tab */}
+          <TabsContent value="commissions" className="space-y-6">
+            <MonolineCommissionHistory userId={user.id} limit={100} />
           </TabsContent>
 
           {/* Earnings Tab */}

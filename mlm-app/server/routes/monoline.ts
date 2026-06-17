@@ -484,9 +484,21 @@ router.get('/user/:userId/commissions', requireAuth, async (req: any, res: any) 
 
     const totalAmount = commissions.reduce((sum, tx) => sum + tx.amount, 0);
 
+    // Transform WalletTransaction to MonolineCommissionTransaction format
+    const transformedTransactions = commissions.map((tx: any) => ({
+      id: tx._id?.toString() || tx.id,
+      recipientId: tx.userId,
+      amount: tx.amount,
+      commissionType: tx.type === 'SPONSOR' ? 'direct_sponsor' : 'depth_level',
+      level: tx.level,
+      status: tx.status === 'PAID' ? 'processed' : 'pending',
+      createdAt: tx.createdAt,
+      processedAt: tx.updatedAt
+    }));
+
     res.json({
       success: true,
-      data: commissions,
+      transactions: transformedTransactions,
       pagination: {
         total,
         page: parseInt(page as string),
@@ -494,7 +506,7 @@ router.get('/user/:userId/commissions', requireAuth, async (req: any, res: any) 
         pages: Math.ceil(total / parseInt(limit as string))
       },
       summary: {
-        totalCommissions: commissions.length,
+        totalCommissions: transformedTransactions.length,
         totalAmount: parseFloat(totalAmount.toFixed(2))
       }
     });

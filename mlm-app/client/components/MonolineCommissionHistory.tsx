@@ -11,7 +11,7 @@ interface MonolineCommissionTransaction {
   recipientId: string;
   amount: number;
   commissionType: 'direct_sponsor' | 'depth_level' | 'passive_pool' | 'company_fund';
-  level?: number; // For depth commissions
+  level?: number;
   buyerId?: string;
   status: 'pending' | 'processed' | 'inactive';
   createdAt: Date;
@@ -41,7 +41,10 @@ export const MonolineCommissionHistory: React.FC<MonolineCommissionHistoryProps>
     const fetchCommissions = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/monoline/user/${userId}/commissions?limit=${limit}`);
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        const response = await fetch(`/api/monoline/user/${userId}/commissions?limit=${limit}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
 
         if (!response.ok) {
           throw new Error('Komisyon geçmişi yüklenemedi');
@@ -50,14 +53,12 @@ export const MonolineCommissionHistory: React.FC<MonolineCommissionHistoryProps>
         const data = await response.json();
         const allTransactions = data.transactions || [];
 
-        // Filter out company_fund transactions so user doesn't see them
         const visibleTransactions = allTransactions.filter(
           (tx: MonolineCommissionTransaction) => tx.commissionType !== 'company_fund'
         );
 
         setTransactions(visibleTransactions);
 
-        // Calculate stats (excluding company fund)
         let total = 0;
         let directSum = 0;
         let depthSum = 0;
@@ -104,7 +105,6 @@ export const MonolineCommissionHistory: React.FC<MonolineCommissionHistoryProps>
         return 'Derinlik Komisyonu';
       case 'passive_pool':
         return 'Pasif Havuz';
-      // company_fund case removed as it is filtered out
       default:
         return type;
     }
@@ -171,7 +171,6 @@ export const MonolineCommissionHistory: React.FC<MonolineCommissionHistoryProps>
           </CardContent>
         </Card>
 
-        {/* Passive Pool Card Removed or made smaller if needed, but let's keep it if user wants to see their passive income */}
         <Card className="bg-gradient-to-br from-pink-50 to-orange-50 md:col-span-3 lg:col-span-1">
           <CardContent className="p-4">
             <div className="text-sm font-semibold text-gray-600 mb-1">Pasif Havuz</div>
@@ -252,17 +251,20 @@ export const MonolineCommissionHistory: React.FC<MonolineCommissionHistoryProps>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center p-2 bg-white rounded border">
               <span>💎 Direkt Sponsor Bonusu</span>
-              <span className="font-semibold">15% ($3.00)</span>
+              <span className="font-semibold">25% ($5.00)</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-white rounded border">
               <span>📈 Derinlik Komisyonu (7 Seviye)</span>
-              <span className="font-semibold">39.5% ($7.90)</span>
+              <span className="font-semibold">10% ($2.00)</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-white rounded border">
-              <span>🎁 Pasif Havuz (Aktif Üyeler)</span>
-              <span className="font-semibold">0.5% ($0.10)</span>
+              <span>🎁 Pasif Havuz</span>
+              <span className="font-semibold">5% ($1.00)</span>
             </div>
-            {/* Company Fund Row Removed */}
+            <div className="flex justify-between items-center p-2 bg-white rounded border">
+              <span>🏢 Şirket Fonu</span>
+              <span className="font-semibold">60% ($12.00)</span>
+            </div>
           </div>
         </CardContent>
       </Card>
