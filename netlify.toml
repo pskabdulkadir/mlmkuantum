@@ -1,7 +1,7 @@
 [build]
-command = "pnpm install && pnpm --filter @workspace/akngroup run build:client"
-publish = "mlm-app/dist/spa"
+base = "mlm-app"
+command = "pnpm install --filter @workspace/akngroup && pnpm run build:client"
+publish = "dist/spa"
 
 [build.environment]
 NODE_ENV = "production"
-PNPM_FLAGS = "--no-frozen-lockfile"
