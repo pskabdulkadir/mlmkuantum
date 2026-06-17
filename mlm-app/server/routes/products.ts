@@ -75,6 +75,8 @@ router.get("/:productId", async (req, res) => {
 // Create product purchase
 router.post("/purchase", async (req, res) => {
   try {
+    console.log("🔵 Purchase endpoint called with body:", JSON.stringify(req.body, null, 2));
+
     const {
       productId,
       buyerId,
@@ -86,6 +88,7 @@ router.post("/purchase", async (req, res) => {
     } = req.body;
 
     if (!productId || !buyerEmail) {
+      console.log("❌ Missing required fields: productId or buyerEmail");
       return res.status(400).json({
         success: false,
         error: "Gerekli alanlar eksik.",
@@ -93,8 +96,10 @@ router.post("/purchase", async (req, res) => {
     }
 
     // Get product details for commission calculation
+    console.log("📦 Getting product:", productId);
     const product = await mongoDb.getProductById(productId);
     if (!product) {
+      console.log("❌ Product not found:", productId);
       return res.status(404).json({
         success: false,
         error: "Ürün bulunamadı.",
@@ -104,6 +109,7 @@ router.post("/purchase", async (req, res) => {
     // Validate shipping address only for physical products
     if (!product.isDigital) {
       if (!shippingAddress) {
+        console.log("❌ Shipping address required for physical product");
         return res.status(400).json({
           success: false,
           error: "Teslimat adresi gereklidir.",
@@ -112,6 +118,7 @@ router.post("/purchase", async (req, res) => {
       const requiredFields = ['fullName', 'address', 'city', 'state', 'zipCode', 'country', 'phone'];
       for (const field of requiredFields) {
         if (!shippingAddress[field]) {
+          console.log(`❌ Missing shipping field: ${field}`);
           return res.status(400).json({
             success: false,
             error: `Teslimat adresi ${field} alanı gereklidir.`,
@@ -121,6 +128,7 @@ router.post("/purchase", async (req, res) => {
     }
 
     // Fulfill the product purchase immediately without requiring manual admin approval
+    console.log("💰 Calling fulfillProductPurchase for user:", buyerId);
     const result = await fulfillProductPurchase({
       productId,
       buyerEmail,
@@ -131,20 +139,24 @@ router.post("/purchase", async (req, res) => {
       userId: buyerId
     });
 
+    console.log("📊 Fulfillment result:", result);
+
     if (!result.success) {
+      console.log("❌ Purchase failed:", result.error);
       return res.status(500).json({
         success: false,
         error: result.error || "Satın alma işlemi tamamlanırken bir hata oluştu."
       });
     }
 
+    console.log("✅ Purchase success! Purchase ID:", result.purchaseId);
     return res.json({
       success: true,
       message: "Ödemeniz alındı ve siparişiniz başarıyla onaylandı. Aktifliğiniz anında tanımlanmıştır.",
       purchaseId: result.purchaseId
     });
   } catch (error) {
-    console.error("Create purchase error:", error);
+    console.error("❌ Create purchase error:", error);
     return res.status(500).json({
       success: false,
       error: "Satın alma işlemi sırasında hata oluştu.",
@@ -155,6 +167,8 @@ router.post("/purchase", async (req, res) => {
 // Fulfillment endpoint (for test mode checkout flow)
 router.post("/fulfillment", async (req, res) => {
   try {
+    console.log("🔵 Fulfillment endpoint called with body:", JSON.stringify(req.body, null, 2));
+
     const {
       productId,
       buyerEmail,
@@ -166,14 +180,17 @@ router.post("/fulfillment", async (req, res) => {
     } = req.body;
 
     if (!productId || !buyerEmail) {
+      console.log("❌ Missing required fields: productId or buyerEmail");
       return res.status(400).json({
         success: false,
         error: "Gerekli alanlar eksik.",
       });
     }
 
+    console.log("📦 Getting product:", productId);
     const product = await mongoDb.getProductById(productId);
     if (!product) {
+      console.log("❌ Product not found:", productId);
       return res.status(404).json({
         success: false,
         error: "Ürün bulunamadı.",
@@ -190,6 +207,7 @@ router.post("/fulfillment", async (req, res) => {
       }
     }
 
+    console.log("💰 Calling fulfillProductPurchase for user:", userId || parsedMetadata?.userId);
     const result = await fulfillProductPurchase({
       productId,
       buyerEmail,
@@ -200,20 +218,24 @@ router.post("/fulfillment", async (req, res) => {
       userId: userId || parsedMetadata?.userId
     });
 
+    console.log("📊 Fulfillment result:", result);
+
     if (!result.success) {
+      console.log("❌ Fulfillment failed:", result.error);
       return res.status(500).json({
         success: false,
         error: result.error || "Satın alma işlemi tamamlanırken bir hata oluştu."
       });
     }
 
+    console.log("✅ Fulfillment success! Purchase ID:", result.purchaseId);
     return res.json({
       success: true,
       message: "Ödemeniz alındı ve siparişiniz başarıyla onaylandı.",
       purchaseId: result.purchaseId
     });
   } catch (error) {
-    console.error("Fulfillment error:", error);
+    console.error("❌ Fulfillment error:", error);
     return res.status(500).json({
       success: false,
       error: "Satın alma işlemi sırasında hata oluştu.",
