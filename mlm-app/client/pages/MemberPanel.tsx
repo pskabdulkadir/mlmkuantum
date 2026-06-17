@@ -738,9 +738,9 @@ export default function MemberPanel() {
     }
   };
 
-  const fetchSponsorInfo = async (sponsorMemberId: string) => {
+  const fetchSponsorInfo = async (sponsorUserId: string) => {
     try {
-      const response = await fetch(`/api/auth/member/by-member-id/${sponsorMemberId}`);
+      const response = await fetch(`/api/auth/member/by-user-id/${sponsorUserId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {

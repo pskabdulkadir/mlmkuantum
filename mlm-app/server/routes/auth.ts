@@ -939,6 +939,28 @@ router.get("/member/by-member-id/:memberId", async (req: any, res) => {
   }
 });
 
+// Get member info by userId (alternative to memberId lookup)
+router.get("/member/by-user-id/:userId", async (req: any, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await mongoDb.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: "Üye bulunamadı." });
+    }
+    return res.json({
+      success: true,
+      sponsor: {
+        fullName: user.fullName,
+        memberId: user.memberId,
+        referralCode: user.referralCode,
+      },
+    });
+  } catch (error) {
+    req.log?.error({ error }, "member lookup by userId error");
+    return res.status(500).json({ success: false, error: "Sunucu hatası." });
+  }
+});
+
 // ===== ENHANCED MEMBER TRACKING ROUTES =====
 
 // Get member logs (for specific member)
