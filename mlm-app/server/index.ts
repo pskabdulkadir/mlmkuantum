@@ -1151,6 +1151,20 @@ export async function createServer() {
     }
   });
 
+  // Serve static files from the dist/spa directory (frontend build)
+  app.use(express.static('dist/spa'));
+
+  // SPA fallback: For React Router, serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    // If it's not an API route, serve the SPA index.html
+    if (!req.path.startsWith('/api')) {
+      res.sendFile('dist/spa/index.html', { root: process.cwd() });
+    } else {
+      // API route not found
+      res.status(404).json({ error: 'API endpoint not found' });
+    }
+  });
+
   // Global error handler (must be last)
   app.use(globalErrorHandler);
 
