@@ -55,8 +55,10 @@ export class MonolineCommissionService {
   ): Promise<SponsorLevel[]> {
     const sponsors: SponsorLevel[] = [];
 
-    const currentUser = await User.findOne({ id: userId }).session(session || null);
-    
+    let query = User.findOne({ id: userId });
+    if (session) query = query.session(session);
+    const currentUser = await query;
+
     if (!currentUser) {
       throw new Error(`User not found: ${userId}`);
     }
@@ -70,7 +72,9 @@ export class MonolineCommissionService {
       searchUser?.previousUserId &&
       level <= maxLevels
     ) {
-      const parent = await User.findOne({ id: searchUser.previousUserId }).session(session || null);
+      let parentQuery = User.findOne({ id: searchUser.previousUserId });
+      if (session) parentQuery = parentQuery.session(session);
+      const parent = await parentQuery;
       if (!parent) break;
 
       // Dynamic Compression: Check if parent is active for current month
