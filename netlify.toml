@@ -1,0 +1,6 @@
+[build]
+command = "cd mlm-app && pnpm run build:client"
+publish = "mlm-app/dist/spa"
+
+[build.environment]
+NODE_ENV = "production"

@@ -112,7 +112,11 @@ const seed = async () => {
   await disconnectDB();
 };
 
-seed().catch((err) => {
-  console.error("❌ Seed hatası:", err);
-  disconnectDB();
-});
+if (process.env.RUN_SEED === 'true') {
+  seed().catch((err) => {
+    console.error("❌ Seed hatası:", err);
+    disconnectDB();
+  });
+} else {
+  console.log("ℹ️ Seed devre dışı (RUN_SEED=false)");
+}

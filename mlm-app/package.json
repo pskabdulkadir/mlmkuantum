@@ -23,13 +23,10 @@
     "validate:users": "ts-node scripts/validate-users.ts",
     "migrate:transactions": "ts-node scripts/migrate-transactions.ts",
     "validate:transactions": "ts-node scripts/validate-transactions.ts",
-    "test": "vitest --run",
-    "test:full-system": "tsx scripts/run-full-system-test.ts",
     "format.fix": "prettier --write .",
     "typecheck": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "seed": "tsc -p tsconfig.seed.json && node --experimental-specifier-resolution=node dist/seed/server/seed-initial-users.js",
     "clean": "rm -rf dist",
     "clean:build": "npm run clean && npm run build"
   },
