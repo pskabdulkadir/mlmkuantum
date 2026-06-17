@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import { User as IUser, MonolineMLMSettings, MonolineCommissionStructure, MonolineCommissionTransaction, PassiveIncomeDistribution } from '../../shared/mlm-types';
 import { User } from './models';
 import { applyWalletTransactions } from './wallet-transaction.service';
