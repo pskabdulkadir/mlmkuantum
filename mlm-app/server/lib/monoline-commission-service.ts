@@ -276,10 +276,10 @@ export class MonolineCommissionService {
     passivePoolAmount: number,
     companyFundAmount: number
   }> {
-    const { 
-      COMMISSION_RATES, 
-      UNILEVEL_RATES, 
-      MAX_UNILEVEL_DEPTH, 
+    const {
+      COMMISSION_RATES,
+      UNILEVEL_RATES,
+      MAX_UNILEVEL_DEPTH,
       CAREER_CONFIG_MAP,
       getMonolineDepthLimit,
       LEGACY_CAREER_MAP
@@ -297,97 +297,97 @@ export class MonolineCommissionService {
     // 1. Şirket Fonu (%60)
     const companyFundAmount = Math.round((productPrice * (COMMISSION_RATES.companyFund / 100)) * 100) / 100;
 
-    // 2. Direkt Sponsor Primi (%25)
-    // Dynamic Compression: Bulunan ilk aktif sponsor
-    let sponsor: any = null;
+    // 2. DIREKT SPONSOR PRİMİ (%25) - sponsorId ile
+    console.log(`💰 Direct sponsor commission starting for buyer: ${buyerId}`);
+    let directSponsor: any = null;
     let searchSponsorId = buyer.sponsorId;
-    let compressionLoop = 0;
+    let compressionCount = 0;
 
-    while (searchSponsorId && compressionLoop < 100) {
+    while (searchSponsorId && compressionCount < 100) {
       const potentialSponsor = await User.findOne({ id: searchSponsorId }).session(session || null);
       if (!potentialSponsor) break;
 
       const isSponsorActive = potentialSponsor.isActive && potentialSponsor.membershipType !== 'NONE' && potentialSponsor.membershipType !== 'free';
-      
+
       if (isSponsorActive) {
-        sponsor = potentialSponsor;
+        directSponsor = potentialSponsor;
+        console.log(`✅ Found active direct sponsor: ${directSponsor.id}`);
         break;
       }
-      
+
       searchSponsorId = potentialSponsor.sponsorId;
-      compressionLoop++;
+      compressionCount++;
     }
 
-    if (sponsor) {
-      const amt = Math.round((productPrice * (COMMISSION_RATES.directSponsor / 100)) * 100) / 100;
-      if (amt > 0) {
+    if (directSponsor) {
+      const directSponsorAmount = Math.round((productPrice * (COMMISSION_RATES.directSponsor / 100)) * 100) / 100;
+      if (directSponsorAmount > 0) {
         transactions.push({
-          id: `DIRECT-${Date.now()}-${sponsor.id}`,
-          userId: sponsor.id,
-          recipientId: sponsor.id,
-          amount: amt,
+          id: `DIRECT-${Date.now()}-${directSponsor.id}`,
+          userId: directSponsor.id,
+          recipientId: directSponsor.id,
+          amount: directSponsorAmount,
           type: 'direct',
-          reference: `DIRECT-${Date.now()}-${sponsor.id}`,
+          reference: `DIRECT-${Date.now()}-${directSponsor.id}`,
           description: `Direkt Sponsor Primi (%${COMMISSION_RATES.directSponsor})`,
           createdAt: new Date(),
           status: 'pending',
           sourceUserId: buyerId
         });
-        totalDistributed += amt;
+        totalDistributed += directSponsorAmount;
+        console.log(`✅ Direct sponsor (${directSponsor.id}): ${directSponsorAmount}$`);
       }
     }
 
-    // 3. 7 Derinlik Unilevel Primi (%10 toplam)
-    let currentSearchUser = buyer;
-    let sponsorDepth = 0;
-    const visitedSponsorIds = new Set<string>([buyer.id]);
+    // 3. MONOLINE UPLINE ZINCIRI - previousUserId ile üst sponsorlara dağıt (%10 unilevel)
+    console.log(`🔗 Monoline upline distribution starting for buyer: ${buyerId}`);
+    const monolineUpline = await this.getMonolineUpline(buyerId, session, 7); // 7 level monoline unilevel
 
-    while (sponsorDepth < MAX_UNILEVEL_DEPTH) {
-      if (!currentSearchUser.sponsorId) break;
-      if (visitedSponsorIds.has(currentSearchUser.sponsorId)) break;
+    // Her upline sponsor seviyesine dağıt (dinamik oran)
+    for (const uplineSponsor of monolineUpline) {
+      const uplineUser = await User.findOne({ id: uplineSponsor.userId }).session(session || null);
+      if (!uplineUser) continue;
 
-      const recipient = await User.findOne({ id: currentSearchUser.sponsorId }).session(session || null);
-      if (!recipient) break;
-
-      visitedSponsorIds.add(recipient.id);
-      currentSearchUser = recipient;
-      sponsorDepth++;
-
-      // Pasif üye: prim almaz ama zincir devam eder (Monoline dinamiklerinde genellikle compress edilir ama unilevel'da skip edilir)
-      if (!recipient.isActive || recipient.membershipType === 'NONE' || recipient.membershipType === 'free') {
+      // Pasif üye: Commission almaz
+      const isActive = uplineUser.isActive && uplineUser.membershipType !== 'NONE' && uplineUser.membershipType !== 'free';
+      if (!isActive) {
+        console.log(`⏭️ Upline ${uplineUser.id} passive, skipping level ${uplineSponsor.level}`);
         continue;
       }
 
-      // Kariyer derinlik limiti kontrolü
-      const rawCareerName = (recipient.careerLevel as any)?.name || recipient.careerLevel || 'Mülhime';
+      // Kariyer bazlı unilevel depth limiti kontrolü
+      const rawCareerName = (uplineUser.careerLevel as any)?.name || uplineUser.careerLevel || 'Mülhime';
       const careerName = LEGACY_CAREER_MAP[rawCareerName] || rawCareerName;
-      const monolineDepthLimit = getMonolineDepthLimit(careerName);
+      const depthLimit = getMonolineDepthLimit(careerName);
 
-      // Monoline derinliği ile Unilevel derinliği farklı olsa da, 
-      // talimat monoline limitlerinin bu pasif geliri (veya genel gelirleri) kısıtladığını işaret ediyor.
-      // Ancak MLM terminolojisinde "Monoline Derinliği" genellikle tek hat havuzundaki sırayı belirtir.
-      // Burada 10 seviye unilevel cirosu kariyer için, unilevel primi ise 7 derinliktedir.
-      
-      const unilevelRate = UNILEVEL_RATES[sponsorDepth] || 0;
+      // Eğer bu upline'ın derinlik limiti seviyesi aşıyorsa, prim almaz
+      if (uplineSponsor.level > depthLimit) {
+        console.log(`🚫 Upline ${uplineUser.id} (${careerName}) depth limit ${depthLimit}, level ${uplineSponsor.level} exceeds, skipping`);
+        continue;
+      }
+
+      // Unilevel oranını al (7 derinlik L1:%3, L2:%2, ... vs)
+      const unilevelRate = UNILEVEL_RATES[uplineSponsor.level] || 0;
       if (unilevelRate <= 0) continue;
 
-      const amt = Math.round((productPrice * (unilevelRate / 100)) * 100) / 100;
-      if (amt > 0) {
-        transactions.push({
-          id: `UNILEVEL-L${sponsorDepth}-${Date.now()}-${recipient.id}`,
-          userId: recipient.id,
-          recipientId: recipient.id,
-          amount: amt,
-          type: 'depth',
-          reference: `UNILEVEL-L${sponsorDepth}-${Date.now()}-${recipient.id}`,
-          description: `Unilevel L${sponsorDepth} Primi (%${unilevelRate})`,
-          createdAt: new Date(),
-          status: 'pending',
-          level: sponsorDepth,
-          sourceUserId: buyerId,
-        });
-        totalDistributed += amt;
-      }
+      const commissionAmount = Math.round((productPrice * (unilevelRate / 100)) * 100) / 100;
+      if (commissionAmount <= 0) continue;
+
+      transactions.push({
+        id: `UNILEVEL-L${uplineSponsor.level}-${Date.now()}-${uplineUser.id}`,
+        userId: uplineUser.id,
+        recipientId: uplineUser.id,
+        amount: commissionAmount,
+        type: 'depth',
+        reference: `UNILEVEL-L${uplineSponsor.level}-${Date.now()}-${uplineUser.id}`,
+        description: `Unilevel L${uplineSponsor.level} Monoline Primi (%${unilevelRate})`,
+        createdAt: new Date(),
+        status: 'pending',
+        level: uplineSponsor.level,
+        sourceUserId: buyerId
+      });
+      totalDistributed += commissionAmount;
+      console.log(`✅ Upline L${uplineSponsor.level} (${uplineUser.id}): ${commissionAmount}$`);
     }
 
     // 4. Monoline Havuzu & Liderlik Bonusu (%5)
