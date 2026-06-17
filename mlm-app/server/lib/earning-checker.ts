@@ -8,14 +8,25 @@ export async function checkEarningLimit(
   session?: mongoose.ClientSession
 ): Promise<'PAID' | 'HELD'> {
 
+  // TESTING MODE: commission hatalarını debuglamak için
+  if (process.env.DISABLE_EARNING_LIMITS === 'true') {
+    console.log(`🧪 Testing mode: Earning limits disabled`);
+    return 'PAID';
+  }
+
   // Paket yoksa veya tanımsızsa HELD yap (monthly reset ile serbest bırakılacak)
   if (!user.membershipType || user.membershipType === 'NONE' || user.membershipType === 'free') {
     return 'HELD';
   }
 
   // @ts-expect-error - PACKAGE_LIMITS tip tanımlaması basit
-  const limits = PACKAGE_LIMITS[user.membershipType];
-  if (!limits) return 'HELD';
+  let limits = PACKAGE_LIMITS[user.membershipType];
+
+  // Fallback: Unknown package type → use BASIC as default
+  if (!limits) {
+    console.warn(`⚠️ Unknown package type: ${user.membershipType}, using BASIC limits`);
+    limits = PACKAGE_LIMITS['BASIC'] || { daily: 200, monthly: 2000 };
+  }
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

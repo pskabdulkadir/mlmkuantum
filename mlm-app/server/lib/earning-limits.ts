@@ -1,4 +1,5 @@
 export const PACKAGE_LIMITS = {
+  // Default packages
   BASIC: {
     daily: 200,
     monthly: 2000
@@ -12,6 +13,15 @@ export const PACKAGE_LIMITS = {
     monthly: 20000
   },
   NONE: {
+    daily: 0,
+    monthly: 0
+  },
+  // Legacy/compatibility names
+  entry: {
+    daily: 200,
+    monthly: 2000
+  },
+  free: {
     daily: 0,
     monthly: 0
   }

@@ -2021,22 +2021,8 @@ export const mongoDb = {
 
     await MonolineCommission.insertMany(recordedTransactions);
 
-    // Apply to wallets
-    for (const t of transactions) {
-      if (t.recipientId && typeof t.amount === 'number' && t.amount > 0) {
-        await this.incrementWalletBalance(t.recipientId, t.amount, 'balance');
-
-        // Create wallet transaction record
-        await this.createWalletTransaction({
-          userId: t.recipientId,
-          amount: t.amount,
-          type: t.type || "commission",
-          reference: `MONO-${Date.now()}`,
-          description: t.description || "Monoline commission",
-          status: "completed",
-        });
-      }
-    }
+    // NOTE: Do NOT apply to wallets here - applyWalletTransactions already handles that
+    // This function is for audit/reporting purposes only
 
     return { success: true, transactionCount: recordedTransactions.length };
   },
