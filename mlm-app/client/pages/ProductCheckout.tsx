@@ -241,9 +241,17 @@ const ProductCheckout: React.FC = () => {
       setError("Lütfen tüm gerekli alanları doldurun.");
       return;
     }
-    
+
     setProcessing(true);
     try {
+      // TODO: Stripe entegrasyonu devre dışı (test için)
+      // Stripe aktif olunca, bu mock kaldırılıp API çağrısı yapılacak
+      alert("✅ Test Modunda: Ürün satın alındı! (Stripe aktif edilinceye kadar)");
+      window.location.href = "/member-panel";
+      return;
+
+      // Aşağıdaki kod Stripe aktif olunca uncomment et
+      /*
       const token = localStorage.getItem("authToken") || localStorage.getItem("token");
       const response = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
@@ -269,8 +277,9 @@ const ProductCheckout: React.FC = () => {
       } else {
         setError(data.error || "Stripe ödeme sayfası oluşturulamadı.");
       }
+      */
     } catch (error) {
-      console.error("Stripe payment error:", error);
+      console.error("Payment error:", error);
       setError("Ödeme sırasında bir hata oluştu.");
     } finally {
       setProcessing(false);
