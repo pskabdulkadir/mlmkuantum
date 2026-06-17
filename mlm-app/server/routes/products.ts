@@ -152,6 +152,75 @@ router.post("/purchase", async (req, res) => {
   }
 });
 
+// Fulfillment endpoint (for test mode checkout flow)
+router.post("/fulfillment", async (req, res) => {
+  try {
+    const {
+      productId,
+      buyerEmail,
+      referralCode,
+      shippingAddress,
+      paymentMethod = "test",
+      metadata,
+      userId,
+    } = req.body;
+
+    if (!productId || !buyerEmail) {
+      return res.status(400).json({
+        success: false,
+        error: "Gerekli alanlar eksik.",
+      });
+    }
+
+    const product = await mongoDb.getProductById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: "Ürün bulunamadı.",
+      });
+    }
+
+    // Parse metadata if it's a string
+    let parsedMetadata = metadata || {};
+    if (typeof metadata === 'string') {
+      try {
+        parsedMetadata = JSON.parse(metadata);
+      } catch (e) {
+        parsedMetadata = {};
+      }
+    }
+
+    const result = await fulfillProductPurchase({
+      productId,
+      buyerEmail,
+      referralCode: referralCode || parsedMetadata?.referralCode,
+      shippingAddress: shippingAddress || (parsedMetadata?.shippingAddress ? JSON.parse(parsedMetadata.shippingAddress) : {}),
+      paymentMethod,
+      totalAmount: product.price,
+      userId: userId || parsedMetadata?.userId
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error || "Satın alma işlemi tamamlanırken bir hata oluştu."
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Ödemeniz alındı ve siparişiniz başarıyla onaylandı.",
+      purchaseId: result.purchaseId
+    });
+  } catch (error) {
+    console.error("Fulfillment error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Satın alma işlemi sırasında hata oluştu.",
+    });
+  }
+});
+
 // Get product sales statistics (admin only)
 router.get("/admin/stats", requireAdmin, async (req, res) => {
   try {
