@@ -1,5 +1,5 @@
 [build]
-command = "cd mlm-app && pnpm install && pnpm run build:client"
+command = "pnpm install && pnpm --filter @workspace/akngroup run build:client"
 publish = "mlm-app/dist/spa"
 
 [build.environment]
