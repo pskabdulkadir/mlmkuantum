@@ -1,6 +1,6 @@
 [build]
 command = "pnpm install && pnpm --filter @workspace/akngroup run build:client"
-publish = "artifacts/mlm-app/dist/spa"
+publish = "mlm-app/dist/spa"
 
 [build.environment]
 NODE_ENV = "production"
