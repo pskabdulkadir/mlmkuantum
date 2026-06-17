@@ -1,7 +1,8 @@
 [build]
 base = "mlm-app"
-command = "pnpm install --filter @workspace/akngroup && pnpm run build:client"
+command = "pnpm install --filter @workspace/akngroup --legacy-peer-deps && pnpm run build:client"
 publish = "dist/spa"
 
 [build.environment]
 NODE_ENV = "production"
+PNPM_VERSION = "10.30.3"
