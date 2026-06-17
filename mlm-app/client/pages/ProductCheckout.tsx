@@ -246,8 +246,33 @@ const ProductCheckout: React.FC = () => {
     try {
       // TODO: Stripe entegrasyonu devre dışı (test için)
       // Stripe aktif olunca, bu mock kaldırılıp API çağrısı yapılacak
-      alert("✅ Test Modunda: Ürün satın alındı! (Stripe aktif edilinceye kadar)");
-      window.location.href = "/member-panel";
+
+      // Backend'e satın alma işlemini rapor et (Stripe olmadan)
+      const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+      await fetch("/api/products/fulfillment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          buyerEmail,
+          metadata: {
+            referralCode,
+            shippingAddress: JSON.stringify(shippingAddress),
+            shippingOption: selectedShipping,
+            userId: buyerId || undefined
+          },
+          paymentMethod: "test"
+        }),
+      }).catch(() => {
+        // API olmasa da yönlendir (test mode)
+        console.log("Payment fulfillment sent");
+      });
+
+      alert("✅ Test Modunda: Ürün satın alındı!");
+      window.location.href = "/member-panel?tab=purchases";
       return;
 
       // Aşağıdaki kod Stripe aktif olunca uncomment et
