@@ -337,6 +337,32 @@ export class MonolineCommissionService {
         totalDistributed += directSponsorAmount;
         console.log(`✅ Direct sponsor (${directSponsor.id}): ${directSponsorAmount}$`);
       }
+
+      // 2.1 LEADERSHIP BONUS - Direct sponsor'un career level'ına göre ekstra bonus (%3-%20)
+      const sponsorCareerName = (directSponsor.careerLevel as any)?.name || directSponsor.careerLevel || 'Mülhime';
+      const sponsorCareerConfig = CAREER_CONFIG_MAP[sponsorCareerName];
+      const leadershipBonusPercent = sponsorCareerConfig?.bonusPercent || 0;
+
+      if (leadershipBonusPercent > 0) {
+        const leadershipBonusAmount = Math.round((productPrice * (leadershipBonusPercent / 100)) * 100) / 100;
+
+        if (leadershipBonusAmount > 0) {
+          transactions.push({
+            id: `LEADERSHIP-${Date.now()}-${directSponsor.id}`,
+            userId: directSponsor.id,
+            recipientId: directSponsor.id,
+            amount: leadershipBonusAmount,
+            type: 'leadership',
+            reference: `LEADERSHIP-${Date.now()}-${directSponsor.id}`,
+            description: `Liderlik Bonusu - ${sponsorCareerName} (%${leadershipBonusPercent})`,
+            createdAt: new Date(),
+            status: 'pending',
+            sourceUserId: buyerId
+          });
+          totalDistributed += leadershipBonusAmount;
+          console.log(`🏆 Leadership bonus for ${sponsorCareerName} (${directSponsor.id}): ${leadershipBonusAmount}$ (%${leadershipBonusPercent})`);
+        }
+      }
     }
 
     // 3. MONOLINE UPLINE ZINCIRI - previousUserId ile üst sponsorlara dağıt (%10 unilevel)

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import PDFDocument from 'pdfkit';
 import { mongoDb } from "../lib/mongo-database";
+import { SystemSettings } from "../lib/models";
 import { GoogleGenAI } from "@google/genai";
 import LoggerService, { LogContext } from "../lib/logger";
 import {

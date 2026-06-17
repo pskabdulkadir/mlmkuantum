@@ -198,6 +198,8 @@ const ProductCheckout: React.FC = () => {
     };
 
     try {
+      console.log("🛒 Purchase starting:", { productId: product.id, buyerId, buyerEmail, referralCode });
+
       const response = await fetch("/api/products/purchase", {
         method: "POST",
         headers: {
@@ -218,13 +220,16 @@ const ProductCheckout: React.FC = () => {
       });
 
       const data = await response.json();
+      console.log("📦 Purchase response:", data);
 
       if (data.success) {
+        console.log("✅ Purchase successful!");
         setSuccess(true);
         // Clear localStorage
         simulateActivation();
         localStorage.removeItem('pendingPurchase');
       } else {
+        console.error("❌ Purchase failed:", data.error);
         setError(data.error || "Satın alma işlemi başarısız.");
       }
     } catch (error) {
@@ -359,7 +364,8 @@ const ProductCheckout: React.FC = () => {
               <p className="text-sm text-green-700">
                 Referans kodu: <strong>{referralCode}</strong><br />
                 Sponsor Bonusu (%25): <strong>${Math.round(product.price * 0.25)}</strong><br />
-                Monoline Dağıtımı (%15): <strong>${Math.round(product.price * 0.15)}</strong><br />
+                Unilevel Komisyon (%10): <strong>${Math.round(product.price * 0.10)}</strong><br />
+                Pasif Havuz (%5): <strong>${Math.round(product.price * 0.05)}</strong><br />
                 Sistem Fonu (%60): <strong>${Math.round(product.price * 0.60)}</strong>
               </p>
             </div>
@@ -382,9 +388,10 @@ const ProductCheckout: React.FC = () => {
   const shippingCost = selectedShippingOption?.price || 0;
   const subtotal = product.price;
   const totalAmount = subtotal + shippingCost;
-  // Product specific distribution (25% Sponsor, 15% Monoline, 60% Company)
+  // Commission distribution breakdown (%25 Direct Sponsor + %10 Unilevel + %5 Pool + %60 Company = %100)
   const directSponsorBonus = subtotal * 0.25;
-  const monolinePoolBonus = subtotal * 0.15;
+  const unilevelCommission = subtotal * 0.10;
+  const passivePool = subtotal * 0.05;
   const systemFund = subtotal * 0.60;
 
   return (
@@ -474,7 +481,8 @@ const ProductCheckout: React.FC = () => {
 
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p>• Sponsor Bonusu: ${directSponsorBonus.toFixed(2)} (%25)</p>
-                  <p>• Monoline Dağıtımı: ${monolinePoolBonus.toFixed(2)} (%15)</p>
+                  <p>• Unilevel Komisyon: ${unilevelCommission.toFixed(2)} (%10)</p>
+                  <p>• Pasif Havuz: ${passivePool.toFixed(2)} (%5)</p>
                   <p>• Sistem/Şirket Payı: ${systemFund.toFixed(2)} (%60)</p>
                   <p>• Referans kodu: {referralCode}</p>
                   <p>• Kargo: {selectedShippingOption?.name} ({selectedShippingOption?.estimatedDays})</p>
@@ -725,7 +733,8 @@ const ProductCheckout: React.FC = () => {
                   <p>• Toplam tutar: <strong>${totalAmount}</strong></p>
                   <hr className="my-2" />
                   <p>• Sponsor Bonusu (%25): <strong>${directSponsorBonus.toFixed(2)}</strong></p>
-                  <p>• Monoline Havuzu (%15): <strong>${monolinePoolBonus.toFixed(2)}</strong></p>
+                  <p>• Unilevel Komisyon (%10): <strong>${unilevelCommission.toFixed(2)}</strong></p>
+                  <p>• Pasif Havuz (%5): <strong>${passivePool.toFixed(2)}</strong></p>
                   <p>• Sistem/Şirket (%60): <strong>${systemFund.toFixed(2)}</strong></p>
                   <p className="text-xs text-muted-foreground mt-2">
                     Satın alma işleminiz tamamlandığında komisyonlar otomatik olarak dağıtılacaktır.

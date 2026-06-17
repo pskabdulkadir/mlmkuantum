@@ -27,17 +27,21 @@ export async function applyWalletTransactions(
         }
       }
 
-      const user = await User.findOne({ id: tx.userId }).session(session);
+      // Find user by id (string field, not _id)
+      const user = await User.findOne({ id: tx.userId }).session(session || null);
       if (!user) {
         console.warn(`User ${tx.userId} not found, skipping transaction`);
         continue;
       }
 
+      console.log(`💳 Processing transaction for user ${tx.userId}: ${tx.amount}${tx.description ? ` (${tx.description})` : ''}`);
+
       // Limit kontrolü yap
       const status = await checkEarningLimit(user, tx.amount, session);
+      console.log(`📌 Status for ${tx.userId}: ${status} (amount: ${tx.amount}${tx.type ? `, type: ${tx.type}` : ''})`);
 
       // İşlem kaydını oluştur (Ledger)
-      await WalletTransaction.create([{
+      const txRecord = await WalletTransaction.create([{
         userId: user._id,
         amount: tx.amount,
         type: tx.type,
@@ -45,6 +49,7 @@ export async function applyWalletTransactions(
         description: tx.description,
         status
       }], { session });
+      console.log(`✅ Transaction record created: ${txRecord[0]?._id}`);
 
       // Eğer limit aşılmadıysa cüzdanı güncelle (Atomik işlem)
       if (status === 'PAID') {
@@ -61,18 +66,23 @@ export async function applyWalletTransactions(
         else if (tx.type === 'PASSIVE') updateQuery.$inc["wallet.passiveIncome"] = tx.amount;
         else if (tx.type === 'LEADERSHIP') updateQuery.$inc["wallet.leadershipBonus"] = tx.amount;
 
+        console.log(`🔄 Updating wallet for ${user._id} with query:`, updateQuery);
+
         const updatedUser = await User.findOneAndUpdate(
           { _id: user._id },
           updateQuery,
-          { session, new: true }
+          { session: session || null, new: true }
         );
 
         if (!updatedUser) {
+          console.error(`❌ Failed to update wallet for user ${user._id}`);
           throw new Error(`Failed to update wallet for user ${user._id}`);
         }
 
+        console.log(`✅ Wallet updated for ${user._id}. New balance: ${updatedUser.wallet?.balance}`);
         processedCount++;
       } else if (status === 'HELD') {
+        console.log(`⏳ Transaction HELD for ${user._id} (limit exceeded)`);
         heldCount++;
       }
       // NOT: user.save() artık çağrılmıyor çünkü findOneAndUpdate her şeyi yaptı

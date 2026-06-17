@@ -91,13 +91,15 @@ async function executePassiveDistributionMongoose() {
     // Toplam dağıtılan tutarı hesapla
     const totalDistributed = perUserAmount * transactions.length;
 
-    // İşlemleri veritabanına yaz
-    await WalletTransaction.insertMany(transactions);
+    // İşlemleri veritabanına yaz ve wallet'leri güncelle
+    const { applyWalletTransactions } = await import('../wallet-transaction.service');
+
+    await applyWalletTransactions(transactions, 'passive-distribution-cron');
 
     // Pool'dan düş
     pool.totalAmount = Math.max(0, pool.totalAmount - totalDistributed);
     pool.lastUpdated = new Date();
-    
+
     // Distribution history ekle
     pool.distributionHistory = pool.distributionHistory || [];
     pool.distributionHistory.push({
@@ -109,7 +111,7 @@ async function executePassiveDistributionMongoose() {
 
     await pool.save();
 
-    console.log(`✅ Passive distribution: ${totalDistributed} TL, ${transactions.length} kullanıcıya dağıtıldı`);
+    console.log(`✅ Passive distribution: $${totalDistributed}, ${transactions.length} aktif üyeye dağıtıldı`);
 
   } catch (error) {
     console.error('❌ Mongoose passive distribution hatasi:', error);
