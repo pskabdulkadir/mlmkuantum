@@ -1,6 +1,7 @@
 [build]
-command = "cd mlm-app && pnpm run build:client"
-publish = "mlm-app/dist/spa"
+command = "pnpm install && pnpm --filter @workspace/mlm-app run build:client"
+publish = "artifacts/mlm-app/dist/spa"
 
 [build.environment]
 NODE_ENV = "production"
+PNPM_FLAGS = "--no-frozen-lockfile"
