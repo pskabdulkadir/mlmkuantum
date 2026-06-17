@@ -55,13 +55,18 @@ export class MonolineCommissionService {
   ): Promise<SponsorLevel[]> {
     const sponsors: SponsorLevel[] = [];
 
+    console.log(`🔍 [getMonolineUpline] Starting for user: ${userId}, maxLevels: ${maxLevels}`);
+
     let query = User.findOne({ id: userId });
     if (session) query = query.session(session);
     const currentUser = await query;
 
     if (!currentUser) {
+      console.log(`❌ [getMonolineUpline] User not found: ${userId}`);
       throw new Error(`User not found: ${userId}`);
     }
+
+    console.log(`✅ [getMonolineUpline] Found current user, previousUserId: ${currentUser.previousUserId}`);
 
     let searchUser = currentUser;
     let level = 1;
@@ -72,10 +77,16 @@ export class MonolineCommissionService {
       searchUser?.previousUserId &&
       level <= maxLevels
     ) {
+      console.log(`🔄 [getMonolineUpline] Loop iteration ${loopCount}, level ${level}, searching for parent: ${searchUser.previousUserId}`);
+
       let parentQuery = User.findOne({ id: searchUser.previousUserId });
       if (session) parentQuery = parentQuery.session(session);
       const parent = await parentQuery;
-      if (!parent) break;
+
+      if (!parent) {
+        console.log(`⏸️ [getMonolineUpline] Parent not found, breaking loop`);
+        break;
+      }
 
       // Dynamic Compression: Check if parent is active for current month
       const isActive = parent.isActive && parent.membershipType !== 'NONE' && (parent.monthlySalesVolume || 0) >= 20; // 20$ is current active min, will update later if needed
@@ -95,12 +106,16 @@ export class MonolineCommissionService {
       }
 
       searchUser = parent;
-      
+
       // Limit search depth to avoid infinite loops and excessive DB queries
       loopCount++;
-      if (sponsors.length >= maxLevels || loopCount > 500) break;
+      if (sponsors.length >= maxLevels || loopCount > 500) {
+        console.log(`⚠️ [getMonolineUpline] Reached limit: sponsors=${sponsors.length}, loopCount=${loopCount}`);
+        break;
+      }
     }
 
+    console.log(`✅ [getMonolineUpline] Completed! Found ${sponsors.length} sponsors`);
     return sponsors;
   }
 
