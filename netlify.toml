@@ -1,7 +1,6 @@
 [build]
-base = "mlm-app"
-command = "pnpm install --filter @workspace/akngroup && NODE_ENV=production pnpm run build:client"
-publish = "dist/spa"
+command = "pnpm install && pnpm --filter @workspace/akngroup run build:client"
+publish = "mlm-app/dist/spa"
 
 [build.environment]
 PNPM_VERSION = "10.30.3"
